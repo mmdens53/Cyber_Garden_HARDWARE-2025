@@ -4,17 +4,16 @@
 #include <Wire.h>
 #include <LiquidCrystal_I2C.h>
 
-// ---------------- RF настройки ----------------
 RCSwitch mySwitch = RCSwitch();
 const int led = 21;
 const int rele = 18;
 const int pisklya = 22;
-// ---------------- RGB LED настройки ----------------
-const int gPin = 16;  // Пин для красного канала
-const int rPin = 17;  // Пин для зеленого канала
-const int bPin = 19;  // Пин для синего канала
+
+const int gPin = 16;
+const int rPin = 17;
+const int bPin = 19;
 const int ldrPin = 34;
-// ---------------- WiFi настройки ----------------
+
 const char* ssid = "IPhoneP";
 const char* password = "11111111";
 
@@ -23,12 +22,10 @@ WiFiClient client;
 
 unsigned long lastSend = 0;
 
-// ====== Настройки порогов ======
 const float TEMP_HIGH = 30.0;
 const float HUM_LOW = 30.0;
 const float HUM_HIGH = 70.0;
 
-// ====== Статические флаги и таймеры ======
 static unsigned long tempTimer = 0;
 static bool tempWarning = false;
 static bool buzzerActive = false;
@@ -36,18 +33,15 @@ static bool buzzerActive = false;
 static bool humLowWarning = false;
 static bool humHighWarning = false;
 
-// ------------------- Освещенность -------------------
 static bool lightWarning = false;
-const int LIGHT_LOW = 1500;  // чем меньше — тем темнее
+const int LIGHT_LOW = 1500;
 const int LIGHT_HIGH = 2000;
 
-// ---------------- DHT11 ----------------
 #define DHTPIN 15
 #define DHTTYPE DHT11
 DHT dht(DHTPIN, DHTTYPE);
 
-// ---------------- LCD I2C ----------------
-LiquidCrystal_I2C lcd(0x27, 16, 2);  // Адрес 0x27, 16x2 LCD
+LiquidCrystal_I2C lcd(0x27, 16, 2);
 
 void setup() {
   Serial.begin(115200);
@@ -56,7 +50,6 @@ void setup() {
   pinMode(rele, OUTPUT);
   pinMode(pisklya, OUTPUT);
 
-  // RGB пины
   pinMode(rPin, OUTPUT);
   pinMode(gPin, OUTPUT);
   pinMode(bPin, OUTPUT);
@@ -64,25 +57,20 @@ void setup() {
   analogWrite(gPin, 0);
   analogWrite(bPin, 0);
 
-  // RF приёмник
-  mySwitch.enableReceive(12);  // Пин 12 для DATA приёмника
+  mySwitch.enableReceive(12);
   mySwitch.setProtocol(1);
   mySwitch.setPulseLength(350);
 
-  // DHT
   dht.begin();
 
-  // Настройка I2C на нестандартные пины
-  Wire.begin(4, 5);  // SDA = GPIO4, SCL = GPIO5
+  Wire.begin(4, 5);
 
-  // LCD
   lcd.init();
   lcd.backlight();
   lcd.clear();
   lcd.setCursor(0, 0);
   lcd.print("ESP32 init...");
 
-  // WiFi
   WiFi.begin(ssid, password);
   Serial.print("Connecting to WiFi");
   while (WiFi.status() != WL_CONNECTED) {
@@ -108,7 +96,7 @@ void loop() {
   float humidity = dht.readHumidity();
   float temperature = dht.readTemperature();
   int lightValue = analogRead(ldrPin);
-  // ------------------- Температура -------------------
+
   if (!tempWarning && temperature >= TEMP_HIGH) {
     tempWarning = true;
     buzzerActive = true;
@@ -131,17 +119,14 @@ void loop() {
     lcd.print("Good temperature");
   }
 
-  // ------------------- Влажность -------------------
-  // Слишком низкая влажность → включить реле
   if (!humLowWarning && humidity < HUM_LOW) {
     humLowWarning = true;
-    digitalWrite(rele, HIGH);  // включить реле
+    digitalWrite(rele, HIGH);
     sendMessage("Влажность слишком низкая! Включаю реле.");
     lcd.clear();
     lcd.print("Low humidity!");
   }
 
-  // Если влажность вернулась в норму → выключить реле
   if (humLowWarning && humidity >= HUM_LOW + 5) {
     humLowWarning = false;
     digitalWrite(rele, LOW);
@@ -150,7 +135,6 @@ void loop() {
     lcd.print("Humidity OK!");
   }
 
-  // Слишком высокая влажность → выключить реле
   if (!humHighWarning && humidity > HUM_HIGH) {
     humHighWarning = true;
     digitalWrite(rele, LOW);
@@ -159,7 +143,6 @@ void loop() {
     lcd.print("High humidity!");
   }
 
-  // Если влажность вернулась в норму после высокой → можно снова включать реле
   if (humHighWarning && humidity <= HUM_HIGH - 5) {
     humHighWarning = false;
     sendMessage("Влажность снова в норме.");
@@ -167,7 +150,6 @@ void loop() {
     lcd.print("Humidity OK!");
   }
 
-  // Если стало темно → включаем LED
   if (!lightWarning && lightValue < LIGHT_LOW) {
     lightWarning = true;
     digitalWrite(led, HIGH);
@@ -176,7 +158,6 @@ void loop() {
     lcd.print("Light: ON");
   }
 
-  // Если стало светло → выключаем LED
   if (lightWarning && lightValue > LIGHT_HIGH) {
     lightWarning = false;
     digitalWrite(led, LOW);
@@ -184,7 +165,7 @@ void loop() {
     lcd.clear();
     lcd.print("Light: OFF");
   }
-  // ---------------- RF приём ----------------
+
   if (mySwitch.available()) {
     int value = mySwitch.getReceivedValue();
 
@@ -221,7 +202,6 @@ void loop() {
     mySwitch.resetAvailable();
   }
 
-  // ---------------- WiFi клиент ----------------
   if (!client || !client.connected()) {
     client = server.available();
     if (client) {
@@ -240,7 +220,6 @@ void loop() {
     }
   }
 
-  // ---------------- Периодическая отправка данных ----------------
   if (millis() - lastSend > 5000 * 3) {
     lastSend = millis();
     lcd.setCursor(0, 0);
@@ -260,9 +239,8 @@ void loop() {
     String message = "Влажность: " + String(humidity) + "%\nТемпература: " + String(temperature) + "°C";
     sendMessage(message);
 
-    // Вывод на LCD
     lcd.setCursor(0, 0);
-    lcd.print("T:" + String(temperature, 1) + "C     ");  // пробелы очищают старые данные
+    lcd.print("T:" + String(temperature, 1) + "C     ");
     lcd.setCursor(0, 1);
     lcd.print("H:" + String(humidity, 1) + "%     ");
   }
@@ -295,8 +273,8 @@ void handleCommand(String msg) {
     lcd.clear();
     lcd.print("WiFi: Rele turned OFF");
   } else if (msg.startsWith("COLOR:")) {
-    // Парсинг команды COLOR: r,g,b
-    String values = msg.substring(6);  // Убираем "COLOR:"
+
+    String values = msg.substring(6);
     int comma1 = values.indexOf(',');
     int comma2 = values.indexOf(',', comma1 + 1);
     if (comma1 > 0 && comma2 > comma1 + 1) {
@@ -304,12 +282,10 @@ void handleCommand(String msg) {
       int g = values.substring(comma1 + 1, comma2).toInt();
       int b = values.substring(comma2 + 1).toInt();
 
-      // Ограничиваем значения 0-255
       r = constrain(r, 0, 255);
       g = constrain(g, 0, 255);
       b = constrain(b, 0, 255);
 
-      // Устанавливаем PWM значения для RGB
       analogWrite(rPin, r);
       analogWrite(gPin, g);
       analogWrite(bPin, b);
@@ -317,7 +293,6 @@ void handleCommand(String msg) {
       String colorMsg = "WiFi: Color set to " + String(r) + "," + String(g) + "," + String(b);
       sendMessage(colorMsg);
 
-      // Обновляем LCD (показываем кратко)
       lcd.clear();
       lcd.setCursor(0, 0);
       lcd.print("RGB: ");

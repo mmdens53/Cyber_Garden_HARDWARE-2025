@@ -1,4 +1,4 @@
-import processing.net.*; 
+import processing.net.*;
 import java.util.regex.*;
 
 Client myClient;
@@ -7,9 +7,8 @@ String tempInfo = "Температура: нет данных";
 String humInfo = "Влажность: нет данных";
 boolean connected = false;
 PFont font;
-int maxLogs = 20;  // Максимум строк в логе
+int maxLogs = 20;
 
-// Переменные для выбора цвета RGB
 int r = 128, g = 128, b = 128;
 int draggingSlider = -1; // -1: none, 0: R, 1: G, 2: B
 int sliderX = 20;
@@ -28,48 +27,40 @@ void setup() {
 
 void draw() {
   background(240);
-  
-  // Статус подключения
+
   fill(0);
   text("Статус: " + (connected ? "✅ Подключено" : "❌ Нет соединения"), 20, 25);
-  
-  // Кнопки (более удобные, с отступами и лучшим стилем)
+
   drawButton(20, 50, 120, 50, "LED ON", color(200, 255, 200));
   drawButton(160, 50, 120, 50, "LED OFF", color(255, 200, 200));
   drawButton(300, 50, 120, 50, "Реле ВКЛ", color(200, 255, 200));
   drawButton(440, 50, 120, 50, "Реле ВЫКЛ", color(255, 200, 200));
-  
-  // Слайдеры для RGB
+
   drawSlider(sliderX, sliderY, r, "R: " + r, color(255, 0, 0));
   drawSlider(sliderX, sliderY + 40, g, "G: " + g, color(0, 255, 0));
   drawSlider(sliderX, sliderY + 80, b, "B: " + b, color(0, 0, 255));
-  
-  // Кнопка отправки цвета
+
   drawButton(sliderX + sliderWidth + 70, sliderY + 30, 120, 40, "Отправить цвет", color(200, 200, 255));
-  
-  // Превью цвета
+
   fill(r, g, b);
   rect(sliderX + sliderWidth + 70, sliderY + 80, 50, 30);
   fill(0);
   text("Превью", sliderX + sliderWidth + 130, sliderY + 95);
-  
-  // Информационное окно (температура и влажность) - сдвинуто вниз
+
   fill(200, 220, 255);
   rect(20, 240, 460, 80);
   fill(0);
   text(tempInfo, 30, 265);
   text(humInfo, 30, 290);
-  
-  // Логовое окно - сдвинуто вниз
+
   fill(230, 230, 230);
   rect(20, 340, 460, 350);
   fill(0);
   text("Лог:", 25, 360);
-  
-  // Отображение лога (последние maxLogs строк, с прокруткой если нужно)
+
   int yPos = 380;
   for (int i = max(0, logs.size() - maxLogs); i < logs.size(); i++) {
-    if (yPos > 670) break;  // Ограничение высоты
+    if (yPos > 670) break;
     text(logs.get(i), 25, yPos);
     yPos += 18;
   }
@@ -78,7 +69,7 @@ void draw() {
 void drawButton(int x, int y, int w, int h, String label, color col) {
   fill(col);
   stroke(0);
-  rect(x, y, w, h, 10);  // Закругленные углы
+  rect(x, y, w, h, 10);
   fill(0);
   textAlign(CENTER, CENTER);
   text(label, x + w/2, y + h/2);
@@ -86,31 +77,26 @@ void drawButton(int x, int y, int w, int h, String label, color col) {
 }
 
 void drawSlider(int x, int y, int val, String label, color barColor) {
-  // Фон слайдера
   fill(200);
   stroke(0);
   rect(x, y, sliderWidth, sliderHeight, 5);
-  
-  // Полоска цвета
+
   fill(barColor);
   noStroke();
   rect(x, y, (val / 255.0) * sliderWidth, sliderHeight);
-  
-  // Ползунок
+
   stroke(0);
   fill(255);
   float knobX = x + (val / 255.0) * sliderWidth;
   rect(knobX - knobSize/2, y - knobSize/2, knobSize, sliderHeight + knobSize);
-  
-  // Лейбл
+
   fill(0);
   text(label, x + sliderWidth + 10, y + sliderHeight/2 + 5);
 }
 
 void mousePressed() {
   if (!connected) return;
-  
-  // Проверка кнопок LED и реле
+
   if (mouseX > 20 && mouseX < 140 && mouseY > 50 && mouseY < 100) {
     sendMessage("LED_ON");
   }
@@ -123,15 +109,13 @@ void mousePressed() {
   if (mouseX > 440 && mouseX < 560 && mouseY > 50 && mouseY < 100) {
     sendMessage("Rele_OFF");
   }
-  
-  // Проверка кнопки отправки цвета
+
   int btnX = sliderX + sliderWidth + 20;
   int btnY = sliderY + 30;
   if (mouseX > btnX && mouseX < btnX + 120 && mouseY > btnY && mouseY < btnY + 40) {
     sendColorMessage();
   }
-  
-  // Проверка слайдеров
+
   checkSliderPress(0, sliderY);     // R
   checkSliderPress(1, sliderY + 40); // G
   checkSliderPress(2, sliderY + 80); // B
@@ -158,7 +142,7 @@ void checkSliderPress(int sliderIndex, int yPos) {
 void updateSliderValue(int sliderIndex) {
   float normalized = constrain((mouseX - sliderX) / (float)sliderWidth, 0, 1);
   int newVal = (int)(normalized * 255);
-  
+
   switch(sliderIndex) {
     case 0: r = newVal; break;
     case 1: g = newVal; break;
@@ -183,7 +167,7 @@ void sendMessage(String msg) {
 void addLog(String msg) {
   logs.add(msg);
   if (logs.size() > maxLogs) {
-    logs.remove(0);  // Удаляем старые сообщения
+    logs.remove(0);
   }
 }
 
@@ -197,21 +181,18 @@ void clientEvent(Client c) {
         addLog("✅ Соединение установлено!");
       }
       addLog("⬅ Получено: " + input);
-      
-      // Парсинг данных датчика (на русском)
+
       parseSensorData(input);
     }
   }
 }
 
 void parseSensorData(String input) {
-  // Извлекаем температуру с помощью regex
   Matcher tempMatcher = Pattern.compile("Температура: (\\d+\\.\\d+)°C").matcher(input);
   if (tempMatcher.find()) {
     tempInfo = "Температура: " + tempMatcher.group(1) + "°C";
   }
-  
-  // Извлекаем влажность
+
   Matcher humMatcher = Pattern.compile("Влажность: (\\d+\\.\\d+)").matcher(input);
   if (humMatcher.find()) {
     humInfo = "Влажность: " + humMatcher.group(1) + "%";
