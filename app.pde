@@ -10,7 +10,7 @@ PFont font;
 int maxLogs = 20;
 
 int r = 128, g = 128, b = 128;
-int draggingSlider = -1; // -1: none, 0: R, 1: G, 2: B
+int draggingSlider = -1;
 int sliderX = 20;
 int sliderY = 120;
 int sliderWidth = 200;
@@ -116,9 +116,9 @@ void mousePressed() {
     sendColorMessage();
   }
 
-  checkSliderPress(0, sliderY);     // R
-  checkSliderPress(1, sliderY + 40); // G
-  checkSliderPress(2, sliderY + 80); // B
+  checkSliderPress(0, sliderY);
+  checkSliderPress(1, sliderY + 40);
+  checkSliderPress(2, sliderY + 80);
 }
 
 void mouseDragged() {
